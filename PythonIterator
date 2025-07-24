@@ -1,0 +1,56 @@
+import os
+
+class FileSystemIterator:
+    def check(self, dirpath, file):
+        if self.pattern in os.path.join(dirpath, file):
+            yield os.path.join(dirpath, file)
+
+    def generator(self):
+        for dirpath, dirnames, filenames in os.walk(self.path):
+            if self.only_dirs:
+                for direct in dirnames:
+                    yield from self.check(dirpath, direct)
+            elif self.only_files:
+                for file in filenames:
+                    yield from self.check(dirpath, file)
+            else:
+                files = dirnames + filenames
+                for file in files:
+                    yield from self.check(dirpath, file)
+
+    def __init__(self, path, only_files, only_dirs, pattern):
+        self.only_files = only_files
+        self.only_dirs = only_dirs
+        self.path = path
+        if pattern == None:
+            pattern = ""
+        self.pattern = pattern
+        self.contents = self.generator()
+
+        if not os.path.isdir(path):
+            raise NotADirectoryError("Задан неверный путь")
+
+        if only_dirs and only_files:
+            raise ValueError("only_files и only_dirs не должны быть оба равны True")
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.contents)
+
+print("Только файлы")
+for item in FileSystemIterator(".", True, False, None):
+    print(item)
+print('Только папки')
+for item in FileSystemIterator(".", False, True, None):
+    print(item)
+print('Всё вместе')
+for item in FileSystemIterator(".", False, False, "С"):
+    print(item)
+it = FileSystemIterator(".", True, False, "A")
+try:
+    while True:
+        print(next(it))
+except StopIteration:
+    pass
